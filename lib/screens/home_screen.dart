@@ -1,4 +1,4 @@
-// lib/screens/jadwal_screen.dart
+// lib/screens/home_screen.dart
 // ignore_for_file: unused_element, unnecessary_to_list_in_spreads
 
 import 'dart:convert';
@@ -14,15 +14,14 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 1;
-  List<Map<String, String>> _jadwalList = [];
+  List<Map<String, dynamic>> _jadwalList = [];
   DateTime _selectedDate = DateTime.now();
-  bool _isLoading = true; //
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -31,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initializeApp() async {
-    await initializeDateFormatting('id_ID', null); // Initialize ID locale
+    await initializeDateFormatting('id_ID', null);
     await _loadJadwal();
     setState(() => _isLoading = false);
   }
@@ -42,48 +41,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (jadwalData != null) {
       setState(() {
-        _jadwalList = List<Map<String, String>>.from(
-          (json.decode(jadwalData) as List).map(
-            (item) => Map<String, String>.from(item),
-          ),
+        _jadwalList = List<Map<String, dynamic>>.from(
+          json
+              .decode(jadwalData)
+              .map((item) => Map<String, dynamic>.from(item)),
         );
       });
     } else {
-      // Default data if nothing in SharedPreferences
       setState(() {
-        _jadwalList = _getDefaultJadwal(_selectedDate);
+        _jadwalList = _getDefaultJadwal();
       });
       _saveJadwal();
     }
   }
 
-  List<Map<String, String>> _getDefaultJadwal(DateTime date) {
-    // Only show default schedule for May 13, 2025 (as in the mockup)
-    if (date.year == 2025 && date.month == 5 && date.day == 13) {
-      return [
-        {
-          'matkul': 'Mobile Programming',
-          'waktu': '08.00 WIB - 10.00 WIB',
-          'date': '2025-05-13',
-        },
-        {
-          'matkul': 'Teknologi Internet of Things',
-          'waktu': '10.00 WIB - 12.00 WIB',
-          'date': '2025-05-13',
-        },
-        {
-          'matkul': 'Teknik Kompilasi',
-          'waktu': '13.20 WIB - 15.00 WIB',
-          'date': '2025-05-13',
-        },
-        {
-          'matkul': 'Pemrograman II',
-          'waktu': '15.30 WIB - 17.00 WIB',
-          'date': '2025-05-13',
-        },
-      ];
-    }
-    return [];
+  List<Map<String, dynamic>> _getDefaultJadwal() {
+    final today = DateTime.now();
+    final dateStr = DateFormat('yyyy-MM-dd').format(today);
+    return [
+      {
+        'matkul': 'Mobile Programming',
+        'waktu': ['08.00 WIB - 10.00 WIB'],
+        'date': dateStr,
+      },
+      {
+        'matkul': 'Teknologi Internet of Things',
+        'waktu': ['10.00 WIB - 12.00 WIB'],
+        'date': dateStr,
+      },
+      {
+        'matkul': 'Teknik Kompilasi',
+        'waktu': ['13.20 WIB - 15.00 WIB'],
+        'date': dateStr,
+      },
+      {
+        'matkul': 'Pemrograman II',
+        'waktu': ['15.30 WIB - 17.00 WIB'],
+        'date': dateStr,
+      },
+    ];
   }
 
   Future<void> _saveJadwal() async {
@@ -97,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<Map<String, String>> _getJadwalForSelectedDate() {
+  List<Map<String, dynamic>> _getJadwalForSelectedDate() {
     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
     return _jadwalList.where((jadwal) => jadwal['date'] == dateStr).toList();
   }
@@ -107,55 +103,70 @@ class _HomeScreenState extends State<HomeScreen> {
     final dateFormat = DateFormat('d MMMM y', 'id_ID');
     final dateStr = dateFormat.format(_selectedDate);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              dateStr,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            if (jadwalHariIni.isNotEmpty)
-              ...jadwalHariIni
-                  .map(
-                    (jadwal) => Padding(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateStr,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (jadwalHariIni.isNotEmpty)
+                Column(
+                  children: jadwalHariIni.map((jadwal) {
+                    final waktuList = jadwal['waktu'] is List
+                        ? jadwal['waktu'].cast<String>()
+                        : [jadwal['waktu']];
+                    return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            jadwal['matkul']!,
+                            jadwal['matkul'],
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            jadwal['waktu']!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                          ...waktuList.map(
+                            (waktu) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                waktu,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  )
-                  .toList()
-            else
-              const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: Text(
-                  'Tidak ada jadwal kuliah hari ini',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                    );
+                  }).toList(),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'Tidak ada jadwal kuliah hari ini',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -164,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Jadwal Kuliah')),
@@ -185,7 +196,12 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _currentIndex = index;
           });
-          // Navigation logic would go here
+
+          if (index == 0) {
+            Navigator.pushNamed(context, '/home');
+          } else if (index == 1) {
+            Navigator.pushNamed(context, '/jadwal');
+          }
         },
         userRole: 'Dosen',
       ),

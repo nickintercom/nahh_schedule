@@ -1,8 +1,7 @@
-// lib/screens/kelola_jadwal_screen.dart
-// ignore_for_file: unused_field
+// lib/screens/jadwal_screen.dart
+// ignore_for_file: unused_field, unused_local_variable
 
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -19,11 +18,11 @@ class JadwalScreen extends StatefulWidget {
 class _JadwalScreenState extends State<JadwalScreen> {
   int _currentIndex = 1;
   List<Map<String, dynamic>> _jadwalList = [];
-  DateTime _selectedDate = DateTime(2025, 5, 13); // Default to May 13, 2025
+  DateTime _selectedDate = DateTime(2025, 5, 13);
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _matkulController = TextEditingController();
-  final TextEditingController _waktuController = TextEditingController();
   int? _editingIndex;
+  List<String> _selectedTimeSlots = [];
 
   @override
   void initState() {
@@ -34,17 +33,15 @@ class _JadwalScreenState extends State<JadwalScreen> {
   Future<void> _loadJadwal() async {
     final prefs = await SharedPreferences.getInstance();
     final jadwalData = prefs.getString('jadwal_data');
-
     if (jadwalData != null) {
       setState(() {
         _jadwalList = List<Map<String, dynamic>>.from(
-          (json.decode(jadwalData) as List).map(
-            (item) => Map<String, dynamic>.from(item),
-          ),
+          json
+              .decode(jadwalData)
+              .map((item) => Map<String, dynamic>.from(item)),
         );
       });
     } else {
-      // Default data if nothing in SharedPreferences
       setState(() {
         _jadwalList = _getDefaultJadwal();
       });
@@ -56,22 +53,22 @@ class _JadwalScreenState extends State<JadwalScreen> {
     return [
       {
         'matkul': 'Mobile Programming',
-        'waktu': '08.00 WIB - 10.00 WIB',
+        'waktu': ['08.00 WIB - 09.40 WIB'],
         'date': '2025-05-13',
       },
       {
         'matkul': 'Teknologi Internet of Things',
-        'waktu': '10.00 WIB - 12.00 WIB',
+        'waktu': ['10.00 WIB - 11.40 WIB'],
         'date': '2025-05-13',
       },
       {
         'matkul': 'Teknik Kompilasi',
-        'waktu': '13.20 WIB - 15.00 WIB',
+        'waktu': ['13.20 WIB - 15.00 WIB'],
         'date': '2025-05-13',
       },
       {
         'matkul': 'Pemrograman II',
-        'waktu': '15.30 WIB - 17.00 WIB',
+        'waktu': ['15.30 WIB - 17.10 WIB'],
         'date': '2025-05-13',
       },
     ];
@@ -94,66 +91,106 @@ class _JadwalScreenState extends State<JadwalScreen> {
   }
 
   void _showEditDialog([int? index]) {
+    _selectedTimeSlots.clear();
+
     if (index != null) {
       _matkulController.text = _jadwalList[index]['matkul'];
-      _waktuController.text = _jadwalList[index]['waktu'];
+      var waktu = _jadwalList[index]['waktu'];
+      if (waktu is List) {
+        _selectedTimeSlots.addAll(waktu.cast<String>());
+      } else {
+        _selectedTimeSlots.add(waktu);
+      }
       _editingIndex = index;
     } else {
       _matkulController.clear();
-      _waktuController.clear();
-      _editingIndex = null;
+      _selectedTimeSlots.clear();
     }
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(index == null ? 'Tambah Jadwal' : 'Edit Jadwal'),
-          content: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _matkulController,
-                  decoration: InputDecoration(labelText: 'Mata Kuliah'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Harap isi nama mata kuliah';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: _waktuController,
-                  decoration: InputDecoration(
-                    labelText: 'Waktu (e.g., 08.00 WIB - 10.00 WIB)',
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text(index == null ? 'Tambah Jadwal' : 'Edit Jadwal'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: _matkulController,
+                        decoration: InputDecoration(labelText: 'Mata Kuliah'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Harap isi nama mata kuliah';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Pilih Waktu Kuliah:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      _TimeSlotPicker(
+                        selectedSlots: _selectedTimeSlots,
+                        onSelectionChanged: (slots) {
+                          setStateDialog(() {
+                            _selectedTimeSlots = slots;
+                          });
+                        },
+                      ),
+                      if (_selectedTimeSlots.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Waktu Terpilih:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        ..._selectedTimeSlots.map(
+                          (slot) => Chip(
+                            label: Text(slot),
+                            onDeleted: () {
+                              setStateDialog(() {
+                                _selectedTimeSlots.remove(slot);
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Harap isi waktu kuliah';
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate() &&
+                        _selectedTimeSlots.isNotEmpty) {
+                      _saveJadwalItem(index);
+                      Navigator.pop(context);
+                    } else if (_selectedTimeSlots.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Harap pilih minimal satu waktu kuliah',
+                          ),
+                        ),
+                      );
                     }
-                    return null;
                   },
+                  child: const Text('Simpan'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  _saveJadwalItem(index);
-                  Navigator.pop(context);
-                }
-              },
-              child: Text('Simpan'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -163,10 +200,11 @@ class _JadwalScreenState extends State<JadwalScreen> {
     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
     final newJadwal = {
       'matkul': _matkulController.text,
-      'waktu': _waktuController.text,
+      'waktu': _selectedTimeSlots.length == 1
+          ? _selectedTimeSlots.first
+          : List.from(_selectedTimeSlots),
       'date': dateStr,
     };
-
     setState(() {
       if (index != null) {
         _jadwalList[index] = newJadwal;
@@ -181,10 +219,10 @@ class _JadwalScreenState extends State<JadwalScreen> {
     final globalIndex =
         _jadwalList.indexWhere(
           (item) =>
-              item['date'] == DateFormat('yyyy-MM-dd').format(_selectedDate),
+              item['matkul'] == _getJadwalForSelectedDate()[index]['matkul'] &&
+              item['date'] == _getJadwalForSelectedDate()[index]['date'],
         ) +
         index;
-
     setState(() {
       _jadwalList.removeAt(globalIndex);
       _saveJadwal();
@@ -195,7 +233,6 @@ class _JadwalScreenState extends State<JadwalScreen> {
     final jadwalHariIni = _getJadwalForSelectedDate();
     final dateFormat = DateFormat('d MMMM y', 'id_ID');
     final dateStr = dateFormat.format(_selectedDate);
-
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -211,6 +248,9 @@ class _JadwalScreenState extends State<JadwalScreen> {
             if (jadwalHariIni.isNotEmpty)
               ...List.generate(jadwalHariIni.length, (index) {
                 final jadwal = jadwalHariIni[index];
+                final waktuList = jadwal['waktu'] is List
+                    ? jadwal['waktu'].cast<String>()
+                    : [jadwal['waktu']];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Column(
@@ -233,7 +273,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
                                   _jadwalList.indexWhere(
                                     (item) =>
                                         item['matkul'] == jadwal['matkul'] &&
-                                        item['waktu'] == jadwal['waktu'],
+                                        item['date'] == jadwal['date'],
                                   ),
                                 ),
                                 child: const Text(
@@ -253,9 +293,17 @@ class _JadwalScreenState extends State<JadwalScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        jadwal['waktu'],
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ...waktuList.map(
+                        (waktu) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            waktu,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -310,9 +358,14 @@ class _JadwalScreenState extends State<JadwalScreen> {
           setState(() {
             _currentIndex = index;
           });
-          // Navigation logic would go here
+          // Navigasi berdasarkan index
+          if (index == 0) {
+            Navigator.pushNamed(context, '/home');
+          } else if (index == 1) {
+            Navigator.pushNamed(context, '/jadwal');
+          }
         },
-        userRole: 'Dosen',
+        userRole: 'Dosen', // Atau 'mahasiswa' sesuai kebutuhan
       ),
     );
   }
@@ -320,7 +373,91 @@ class _JadwalScreenState extends State<JadwalScreen> {
   @override
   void dispose() {
     _matkulController.dispose();
-    _waktuController.dispose();
     super.dispose();
+  }
+}
+
+class _TimeSlotPicker extends StatelessWidget {
+  final List<String> selectedSlots;
+  final Function(List<String>) onSelectionChanged;
+
+  const _TimeSlotPicker({
+    required this.selectedSlots,
+    required this.onSelectionChanged,
+  });
+
+  List<String> _generateTimeSlots() {
+    List<String> slots = [];
+    TimeOfDay currentTime = const TimeOfDay(hour: 8, minute: 0);
+    const duration = Duration(minutes: 100); // 1 jam 40 menit
+
+    while (currentTime.hour < 16 ||
+        (currentTime.hour == 16 && currentTime.minute <= 20)) {
+      TimeOfDay nextTime = TimeOfDay(
+        hour: currentTime.hour + (currentTime.minute + 100) ~/ 60,
+        minute: (currentTime.minute + 100) % 60,
+      );
+      final startStr = _formatTimeOfDay(currentTime);
+      final endStr = _formatTimeOfDay(nextTime);
+      slots.add('$startStr WIB - $endStr WIB');
+      currentTime = nextTime;
+    }
+
+    currentTime = const TimeOfDay(hour: 18, minute: 20);
+    while (currentTime.hour < 22) {
+      TimeOfDay nextTime = TimeOfDay(
+        hour: currentTime.hour + (currentTime.minute + 100) ~/ 60,
+        minute: (currentTime.minute + 100) % 60,
+      );
+      if (nextTime.hour >= 22) break;
+      final startStr = _formatTimeOfDay(currentTime);
+      final endStr = _formatTimeOfDay(nextTime);
+      slots.add('$startStr WIB - $endStr WIB');
+      currentTime = nextTime;
+    }
+
+    return slots;
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}.${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final timeSlots = _generateTimeSlots();
+    return Column(
+      children: [
+        SizedBox(
+          height: 200,
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 3,
+              mainAxisSpacing: 4,
+              crossAxisSpacing: 4,
+            ),
+            itemCount: timeSlots.length,
+            itemBuilder: (context, index) {
+              final slot = timeSlots[index];
+              final isSelected = selectedSlots.contains(slot);
+              return FilterChip(
+                label: Text(slot),
+                selected: isSelected,
+                onSelected: (selected) {
+                  final newSelection = List<String>.from(selectedSlots);
+                  if (selected) {
+                    newSelection.add(slot);
+                  } else {
+                    newSelection.remove(slot);
+                  }
+                  onSelectionChanged(newSelection);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
