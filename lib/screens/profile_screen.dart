@@ -184,3 +184,134 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+// // lib/screens/profile_screen.dart
+// import 'package:flutter/material.dart';
+// import 'package:intl/intl.dart';
+
+// class ProfileScreen extends StatelessWidget {
+//   final String userRole; // 'dosen' or 'mahasiswa'
+//   final String name;
+//   final String id;
+//   final String email;
+//   final String phone;
+//   final DateTime birthDate;
+//   final String? kelas;
+//   final String? jabatan;
+//   final bool isActive;
+
+//   const ProfileScreen({
+//     Key? key,
+//     required this.userRole,
+//     required this.name,
+//     required this.id,
+//     required this.email,
+//     required this.phone,
+//     required this.birthDate,
+//     this.kelas,
+//     this.jabatan,
+//     required this.isActive,
+//   }) : super(key: key);
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final statusText = isActive ? 'Aktif' : 'Tidak Aktif';
+//     final statusColor = isActive ? Colors.green : Colors.red;
+//     final dateFormat = DateFormat('d MMMM y', 'id_ID');
+//     return Scaffold(
+//       appBar: AppBar(
+//         automaticallyImplyLeading: true,
+//         backgroundColor: Colors.white,
+//         iconTheme: const IconThemeData(color: Colors.black),
+//         elevation: 0,
+//         title: const Text('Profil', style: TextStyle(color: Colors.blue)),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.pushNamed(context, '/profileData'),
+//             child: const Text('Data Pribadi', style: TextStyle(color: Colors.blue)),
+//           ),
+//         ],
+//       ),
+//       backgroundColor: const Color(0xFFE6E8FF),
+//       body: SingleChildScrollView(
+//         padding: const EdgeInsets.all(16),
+//         child: Column(
+//           children: [
+//             Container(
+//               width: double.infinity,
+//               decoration: BoxDecoration(
+//                 color: const Color(0xFFEBEEFF),
+//                 borderRadius: BorderRadius.circular(16),
+//               ),
+//               padding: const EdgeInsets.symmetric(vertical: 24),
+//               child: Column(
+//                 children: [
+//                   CircleAvatar(
+//                     radius: 50,
+//                     backgroundImage: AssetImage('assets/images/profile.jpg'),
+//                   ),
+//                   const SizedBox(height: 16),
+//                   Text(name,
+//                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+//                   const SizedBox(height: 4),
+//                   Text(id, style: const TextStyle(color: Colors.black54)),
+//                 ],
+//               ),
+//             ),
+//             const SizedBox(height: 24),
+//             _buildField('Email', email),
+//             const SizedBox(height: 16),
+//             _buildField('Nomor Telepon', phone),
+//             const SizedBox(height: 16),
+//             _buildField('Tanggal Lahir', dateFormat.format(birthDate)),
+//             const SizedBox(height: 16),
+//             if (userRole == 'mahasiswa') ...[
+//               _buildField('Kelas', kelas ?? '-'),
+//               const SizedBox(height: 16),
+//               _buildField('Status Mahasiswa', statusText, valueColor: statusColor),
+//             ] else ...[
+//               _buildField('Jabatan', jabatan ?? '-'),
+//               const SizedBox(height: 16),
+//               _buildField('Status Dosen', statusText, valueColor: statusColor),
+//             ],
+//             const SizedBox(height: 24),
+//             ElevatedButton(
+//               onPressed: () {
+//                 // TODO: handle logout
+//                 Navigator.pop(context);
+//               },
+//               style: ElevatedButton.styleFrom(
+//                 backgroundColor: Colors.red,
+//                 minimumSize: const Size.fromHeight(48),
+//                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+//               ),
+//               child: const Text('Logout'),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildField(String label, String value, {Color? valueColor}) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+//         const SizedBox(height: 4),
+//         Container(
+//           width: double.infinity,
+//           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+//           decoration: BoxDecoration(
+//             color: Colors.white,
+//             borderRadius: BorderRadius.circular(8),
+//           ),
+//           child: Text(
+//             value,
+//             style: TextStyle(fontSize: 14, color: valueColor ?? Colors.black),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }

@@ -12,7 +12,7 @@ class Jadwal {
 
   factory Jadwal.fromJson(Map<String, dynamic> json) {
     final waktuJson = json['waktu'];
-    late List<String> waktuList;
+    List<String> waktuList;
     if (waktuJson is String) {
       waktuList = [waktuJson];
     } else if (waktuJson is List) {

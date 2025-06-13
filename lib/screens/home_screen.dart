@@ -1,6 +1,4 @@
 // lib/screens/home_screen.dart
-// ignore_for_file: unused_element, unnecessary_to_list_in_spreads
-
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -11,14 +9,14 @@ import '../widgets/bottom_nav_bar.dart';
 import '../widgets/calendar_widget.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 1;
+  int _currentIndex = 0;
   List<Map<String, dynamic>> _jadwalList = [];
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
@@ -38,20 +36,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadJadwal() async {
     final prefs = await SharedPreferences.getInstance();
     final jadwalData = prefs.getString('jadwal_data');
-
     if (jadwalData != null) {
-      setState(() {
-        _jadwalList = List<Map<String, dynamic>>.from(
-          json
-              .decode(jadwalData)
-              .map((item) => Map<String, dynamic>.from(item)),
-        );
-      });
+      _jadwalList = List<Map<String, dynamic>>.from(
+        json.decode(jadwalData).map((item) => Map<String, dynamic>.from(item)),
+      );
     } else {
-      setState(() {
-        _jadwalList = _getDefaultJadwal();
-      });
-      _saveJadwal();
+      _jadwalList = _getDefaultJadwal();
+      await _saveJadwal();
     }
   }
 
@@ -87,121 +78,114 @@ class _HomeScreenState extends State<HomeScreen> {
     await prefs.setString('jadwal_data', json.encode(_jadwalList));
   }
 
-  void _onDateSelected(DateTime date) {
-    setState(() {
-      _selectedDate = date;
-    });
-  }
+  void _onDateSelected(DateTime date) => setState(() => _selectedDate = date);
 
   List<Map<String, dynamic>> _getJadwalForSelectedDate() {
     final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
     return _jadwalList.where((jadwal) => jadwal['date'] == dateStr).toList();
   }
 
-  Widget _buildJadwalHarian() {
-    final jadwalHariIni = _getJadwalForSelectedDate();
-    final dateFormat = DateFormat('d MMMM y', 'id_ID');
-    final dateStr = dateFormat.format(_selectedDate);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                dateStr,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (jadwalHariIni.isNotEmpty)
-                Column(
-                  children: jadwalHariIni.map((jadwal) {
-                    final waktuList = jadwal['waktu'] is List
-                        ? jadwal['waktu'].cast<String>()
-                        : [jadwal['waktu']];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            jadwal['matkul'],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          ...waktuList.map(
-                            (waktu) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                waktu,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                )
-              else
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    'Tidak ada jadwal kuliah hari ini',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoading)
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+
+    final entries = _getJadwalForSelectedDate();
+    final headerDate = DateFormat('d MMMM y', 'id_ID').format(_selectedDate);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Jadwal Kuliah')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Jadwal Kuliah',
+          style: TextStyle(color: Colors.blue),
+        ),
+        actions: [
+          IconButton(
+            icon: CircleAvatar(
+              backgroundImage: AssetImage('assets/images/profile.jpg'),
+              radius: 16,
+            ),
+            padding: const EdgeInsets.only(right: 14),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CalendarWidget(
               selectedDate: _selectedDate,
               onDateSelected: _onDateSelected,
             ),
-            _buildJadwalHarian(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const Text(
+                    'Jadwal Kuliah',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  Text(headerDate, style: const TextStyle(fontSize: 16)),
+                ],
+              ),
+            ),
+            ...entries.map((jadwal) {
+              final slots = jadwal['waktu'] is List
+                  ? jadwal['waktu'].cast<String>()
+                  : [jadwal['waktu']];
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          jadwal['matkul'],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...slots.map(
+                          (waktu) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              waktu,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-
-          if (index == 0) {
+          setState(() => _currentIndex = index);
+          if (index == 0)
             Navigator.pushNamed(context, '/home');
-          } else if (index == 1) {
+          else
             Navigator.pushNamed(context, '/jadwal');
-          }
         },
         userRole: 'Dosen',
       ),
